@@ -65,9 +65,25 @@ namespace GenerateMediator
 
                 var sourceBuilder = new StringBuilder();
 
+                var useFluentValidation = false;
+
+                var symbols = new List<ISymbol>
+                {
+                    classSymbol.GetMembers().FirstOrDefault(x => x.Name == "Query"),
+                    classSymbol.GetMembers().FirstOrDefault(x => x.Name == "Command")
+                };
+
+                foreach (var symbol in symbols)
+                {
+                    if (symbol is INamedTypeSymbol prop)
+                    {
+                        useFluentValidation = prop.GetMembers().Any(x => x.Name == "AddValidation");
+                    }
+                }
+
                 sourceBuilder.Append(@$"
 using MediatR;
-using FluentValidation;
+{(useFluentValidation == true ? "using FluentValidation;" : "")}
 using System.Threading;
 using System.Threading.Tasks;
 
