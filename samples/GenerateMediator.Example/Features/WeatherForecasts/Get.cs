@@ -12,11 +12,7 @@ namespace GenerateMediator.Example.Features.WeatherForecasts
     [GenerateMediator]
     public static partial class Get
     {
-        public partial record Query(int Id)
-        {
-            public static void AddValidation(AbstractValidator<Query> v)
-                => v.RuleFor(x => x.Id).NotEmpty();
-        }
+        public partial record Query() { }
 
         public record Model(IList<Model.WeatherForecast> WeatherForecasts)
         {
