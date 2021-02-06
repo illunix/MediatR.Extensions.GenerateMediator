@@ -58,35 +58,34 @@ namespace GenerateMediator
                     classSymbols.Add(classSymbol);
                 }
             }
+            
+            var sourceBuilder = new StringBuilder();
 
+            var useFluentValidation = false;
+
+            foreach (var symbol in classSymbols.Select(classSymbol => new List<ISymbol>
+            {
+                classSymbol.GetMembers().FirstOrDefault(x => x.Name == "Query"),
+                classSymbol.GetMembers().FirstOrDefault(x => x.Name == "Command")
+            }).SelectMany(symbols => symbols))
+            {
+                if (symbol is INamedTypeSymbol prop)
+                {
+                    useFluentValidation = prop.GetMembers().Any(x => x.Name == "AddValidation");
+                }
+            } 
+            
+            sourceBuilder.Append(@$"
+using MediatR;
+{(useFluentValidation == true ? "using FluentValidation;" : "")}
+using System.Threading;
+using System.Threading.Tasks;");
+            
             foreach (var classSymbol in classSymbols)
             {
                 var namespaceName = classSymbol.ContainingNamespace.ToDisplayString();
 
-                var sourceBuilder = new StringBuilder();
-
-                var useFluentValidation = false;
-
-                var symbols = new List<ISymbol>
-                {
-                    classSymbol.GetMembers().FirstOrDefault(x => x.Name == "Query"),
-                    classSymbol.GetMembers().FirstOrDefault(x => x.Name == "Command")
-                };
-
-                foreach (var symbol in symbols)
-                {
-                    if (symbol is INamedTypeSymbol prop)
-                    {
-                        useFluentValidation = prop.GetMembers().Any(x => x.Name == "AddValidation");
-                    }
-                }
-
                 sourceBuilder.Append(@$"
-using MediatR;
-{(useFluentValidation == true ? "using FluentValidation;" : "")}
-using System.Threading;
-using System.Threading.Tasks;
-
 namespace {namespaceName}
 {{ 
     public {(classSymbol.IsStatic ? "static" : "")} partial class {classSymbol.Name} 
@@ -95,9 +94,10 @@ namespace {namespaceName}
         {GenerateCommandSource(classSymbol)}
     }} 
 }}");
-                context.AddSource($"{classSymbol.Name}.GenerateMediator.g.cs",
-                    SourceText.From(sourceBuilder.ToString(), Encoding.UTF8));
             }
+
+            context.AddSource("GenerateMediator.g.cs",
+                SourceText.From(sourceBuilder.ToString(), Encoding.UTF8));
         }
 
         private static string GenerateQuerySource(INamedTypeSymbol symbol)
@@ -145,8 +145,8 @@ namespace {namespaceName}
                     }
                 }
 
-                var addValidation = prop.GetMembers().FirstOrDefault(x => x.Name == "AddValidation");
-
+                var addValidation = prop.GetMembers().FirstOrDefault(x => x.Name == "AddValidation") as INamedTypeSymbol;
+                
                 var queryValidator = new StringBuilder();
 
                 if (addValidation is not null)
