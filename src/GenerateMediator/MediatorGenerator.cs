@@ -69,6 +69,11 @@ namespace GenerateMediator
                 classSymbol.GetMembers().FirstOrDefault(x => x.Name == "Command")
             }).SelectMany(symbols => symbols))
             {
+                if (useFluentValidation is not false)
+                {
+                    continue;
+                }
+
                 if (symbol is INamedTypeSymbol prop)
                 {
                     useFluentValidation = prop.GetMembers().Any(x => x.Name == "AddValidation");
