@@ -160,7 +160,7 @@ public {(query.IsSealed ? "sealed" : "")} partial record Query : IRequest<{query
 
 {queryValidator}
 
-public class _QueryHandler : IRequestHandler<Query, {queryTypeArgument}>
+private class _QueryHandler : IRequestHandler<Query, {queryTypeArgument}>
 {{
     {queryHandlerProperties}
 
@@ -229,7 +229,7 @@ public {(command.IsSealed ? "sealed" : "")} partial record Command : IRequest {{
 
 {commandValidator}
 
-public class _CommandHandler : AsyncRequestHandler<Command>
+private class _CommandHandler : AsyncRequestHandler<Command>
 {{
     {commandHandlerProperties}
 
