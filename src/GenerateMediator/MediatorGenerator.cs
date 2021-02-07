@@ -82,7 +82,7 @@ namespace GenerateMediator
             
             sourceBuilder.Append(@$"
 using MediatR;
-{(useFluentValidation == true ? "using FluentValidation;" : "")}
+{(useFluentValidation ? "using FluentValidation;" : "")}
 using System.Threading;
 using System.Threading.Tasks;");
             
@@ -108,59 +108,63 @@ namespace {namespaceName}
         private static string GenerateQuerySource(INamedTypeSymbol symbol)
         {
             var query = symbol.GetMembers().FirstOrDefault(x => x.Name == "Query");
-            if (query is INamedTypeSymbol prop)
+            if (query is not INamedTypeSymbol prop)
             {
-                var queryHandler = symbol.GetMembers().FirstOrDefault(x => x.Name == "QueryHandler");
+                return "";
+            }
+            
+            var queryHandler = symbol.GetMembers().FirstOrDefault(x => x.Name == "QueryHandler");
 
-                var queryHandlerProperties = new StringBuilder();
-                var queryHandlerInjectedProperties = new StringBuilder();
-                var queryHandlerConstructorParameters = new StringBuilder();
-                var queryHandlerParameters = new StringBuilder();
+            var queryHandlerProperties = new StringBuilder();
+            var queryHandlerInjectedProperties = new StringBuilder();
+            var queryHandlerConstructorParameters = new StringBuilder();
+            var queryHandlerParameters = new StringBuilder();
 
-                dynamic queryTypeArgument = "Unit";
+            dynamic queryTypeArgument = "Unit";
 
-                if (queryHandler is IMethodSymbol method)
+            if (queryHandler is IMethodSymbol method)
+            {
+                foreach (var parameter in method.Parameters)
                 {
-                    foreach (var parameter in method.Parameters)
+                    var emptyOrComma = SymbolEqualityComparer.Default.Equals(parameter, method.Parameters.Last()) ? "" : ", ";
+                    
+                    if (parameter.Name.Equals("query", StringComparison.OrdinalIgnoreCase))
                     {
-                        if (parameter.Name.Equals("query", StringComparison.OrdinalIgnoreCase))
-                        {
-                            queryHandlerParameters.Append(
-                                $"request{(SymbolEqualityComparer.Default.Equals(parameter, method.Parameters.Last()) ? "" : ", ")}");
-                        }
-                        else
-                        {
-                            queryHandlerProperties.AppendLine(
-                                $"private readonly {parameter.Type} _{parameter.Name};");
-
-                            queryHandlerParameters.Append(
-                                $"_{parameter.Name}{(SymbolEqualityComparer.Default.Equals(parameter, method.Parameters.Last()) ? "" : ", ")}");
-
-                            queryHandlerConstructorParameters.Append(
-                                $"{parameter.Type} {parameter.Name}{(SymbolEqualityComparer.Default.Equals(parameter, method.Parameters.Last()) ? "" : ", ")}");
-
-                            queryHandlerInjectedProperties.AppendLine($"_{parameter.Name} = {parameter.Name};");
-                        }
+                        queryHandlerParameters.Append(
+                            $"request{emptyOrComma}");
                     }
-
-                    var returnType = method.ReturnType as INamedTypeSymbol;
-                    if (returnType is not null)
+                    else
                     {
-                        queryTypeArgument = returnType.TypeArguments.First();
+                        queryHandlerProperties.AppendLine(
+                            $"private readonly {parameter.Type} _{parameter.Name};");
+
+                        queryHandlerParameters.Append(
+                            $"_{parameter.Name}{emptyOrComma}");
+
+                        queryHandlerConstructorParameters.Append(
+                            $"{parameter.Type} {parameter.Name}{emptyOrComma}");
+
+                        queryHandlerInjectedProperties.AppendLine($"_{parameter.Name} = {parameter.Name};");
                     }
                 }
 
-                var addValidation = prop.GetMembers().FirstOrDefault(x => x.Name == "AddValidation") as INamedTypeSymbol;
+                if (method.ReturnType is INamedTypeSymbol returnType)
+                {
+                    queryTypeArgument = returnType.TypeArguments.First();
+                }
+            }
+
+            var addValidation = prop.GetMembers().FirstOrDefault(x => x.Name == "AddValidation") as INamedTypeSymbol;
                 
-                var queryValidator = new StringBuilder();
+            var queryValidator = new StringBuilder();
 
-                if (addValidation is not null)
-                {
-                    queryValidator.Append(
-                        @$"private class QueryValidator : AbstractValidator<Query> {{ public QueryValidator() {{ Query.AddValidation(this); }} }}");
-                }
+            if (addValidation is not null)
+            {
+                queryValidator.Append(
+                    @$"private class QueryValidator : AbstractValidator<Query> {{ public QueryValidator() {{ Query.AddValidation(this); }} }}");
+            }
 
-                return @$"
+            return @$"
 public {(query.IsSealed ? "sealed" : "")} partial record Query : IRequest<{queryTypeArgument}> {{ }} 
 
 {queryValidator}
@@ -177,59 +181,61 @@ private class _QueryHandler : IRequestHandler<Query, {queryTypeArgument}>
     public async Task<{queryTypeArgument}> Handle(Query request, CancellationToken cancellationToken)  
         => {(queryHandler is null ? $"await Task.FromResult(Unit.Value);" : $"await QueryHandler({queryHandlerParameters});")}
 }}";
-            }
-
-            return "";
         }
 
         private static string GenerateCommandSource(INamedTypeSymbol symbol)
         {
             var command = symbol.GetMembers().FirstOrDefault(x => x.Name == "Command");
-            if (command is INamedTypeSymbol prop)
+            if (command is not INamedTypeSymbol prop)
             {
-                var commandHandler = symbol.GetMembers().FirstOrDefault(x => x.Name == "CommandHandler");
+                return "";
+            }
+            
+            var commandHandler = symbol.GetMembers().FirstOrDefault(x => x.Name == "CommandHandler");
 
-                var commandHandlerProperties = new StringBuilder();
-                var commandHandlerInjectedProperties = new StringBuilder();
-                var commandHandlerConstructorParameters = new StringBuilder();
-                var commandHandlerParameters = new StringBuilder();
+            var commandHandlerProperties = new StringBuilder();
+            var commandHandlerInjectedProperties = new StringBuilder();
+            var commandHandlerConstructorParameters = new StringBuilder();
+            var commandHandlerParameters = new StringBuilder();
 
-                if (commandHandler is IMethodSymbol method)
+            if (commandHandler is IMethodSymbol method)
+            {
+                foreach (var parameter in method.Parameters)
                 {
-                    foreach (var parameter in method.Parameters)
+                    var emptyOrComma = SymbolEqualityComparer.Default.Equals(parameter, method.Parameters.Last()) ? "" : ", ";
+
+                    if (parameter.Name.Equals("command", StringComparison.OrdinalIgnoreCase))
                     {
-                        if (parameter.Name.Equals("command", StringComparison.OrdinalIgnoreCase))
-                        {
-                            commandHandlerParameters.Append(
-                                $"request{(SymbolEqualityComparer.Default.Equals(parameter, method.Parameters.Last()) ? "" : ", ")}");
-                        }
-                        else
-                        {
-                            commandHandlerProperties.AppendLine(
-                                $"private readonly {parameter.Type} _{parameter.Name};");
+                        commandHandlerParameters.Append(
+                            $"request{emptyOrComma}");
+                    }
+                    else
+                    {
+                        commandHandlerProperties.AppendLine(
+                            $"private readonly {parameter.Type} _{parameter.Name};");
 
-                            commandHandlerParameters.Append(
-                                $"_{parameter.Name}{(SymbolEqualityComparer.Default.Equals(parameter, method.Parameters.Last()) ? "" : ", ")}");
+                        commandHandlerParameters.Append(
+                            $"_{parameter.Name}{emptyOrComma}");
 
-                            commandHandlerConstructorParameters.Append(
-                                $"{parameter.Type} {parameter.Name}{(SymbolEqualityComparer.Default.Equals(parameter, method.Parameters.Last()) ? "" : ", ")}");
+                        commandHandlerConstructorParameters.Append(
+                            $"{parameter.Type} {parameter.Name}{emptyOrComma}");
 
-                            commandHandlerInjectedProperties.AppendLine($"_{parameter.Name} = {parameter.Name};");
-                        }
+                        commandHandlerInjectedProperties.AppendLine($"_{parameter.Name} = {parameter.Name};");
                     }
                 }
+            }
 
-                var addValidation = prop.GetMembers().FirstOrDefault(x => x.Name == "AddValidation");
+            var addValidation = prop.GetMembers().FirstOrDefault(x => x.Name == "AddValidation");
 
-                var commandValidator = new StringBuilder();
+            var commandValidator = new StringBuilder();
 
-                if (addValidation is not null)
-                {
-                    commandValidator.Append(
-                        @$"private class CommandValidator : AbstractValidator<Command> {{ public CommandValidator() {{ Command.AddValidation(this); }} }}");
-                }
+            if (addValidation is not null)
+            {
+                commandValidator.Append(
+                    @$"private class CommandValidator : AbstractValidator<Command> {{ public CommandValidator() {{ Command.AddValidation(this); }} }}");
+            }
 
-                return @$"
+            return @$"
 public {(command.IsSealed ? "sealed" : "")} partial record Command : IRequest {{ }} 
 
 {commandValidator}
@@ -247,9 +253,6 @@ private class _CommandHandler : AsyncRequestHandler<Command>
         => {(commandHandler is null ? "await Task.CompletedTask;" : $"await CommandHandler({commandHandlerParameters});")}
 }} 
 ";
-            }
-
-            return "";
         }
     }
 }
