@@ -1,4 +1,4 @@
-﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Text;
 using System;
@@ -154,14 +154,14 @@ namespace {namespaceName}
                 }
             }
 
-            var addValidation = prop.GetMembers().FirstOrDefault(x => x.Name == "AddValidation") as INamedTypeSymbol;
+            var addValidation = prop.GetMembers().FirstOrDefault(x => x.Name == "AddValidation");
                 
             var queryValidator = new StringBuilder();
 
             if (addValidation is not null)
             {
                 queryValidator.Append(
-                    @$"private class QueryValidator : AbstractValidator<Query> {{ public QueryValidator() {{ Query.AddValidation(this); }} }}");
+                    @$"public class QueryValidator : AbstractValidator<Query> {{ public QueryValidator() {{ Query.AddValidation(this); }} }}");
             }
 
             return @$"
@@ -232,7 +232,7 @@ private class _QueryHandler : IRequestHandler<Query, {queryTypeArgument}>
             if (addValidation is not null)
             {
                 commandValidator.Append(
-                    @$"private class CommandValidator : AbstractValidator<Command> {{ public CommandValidator() {{ Command.AddValidation(this); }} }}");
+                    @$"public class CommandValidator : AbstractValidator<Command> {{ public CommandValidator() {{ Command.AddValidation(this); }} }}");
             }
 
             return @$"
