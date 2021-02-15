@@ -112,7 +112,7 @@ namespace {namespaceName}
             {
                 return "";
             }
-            
+
             var queryHandler = symbol.GetMembers().FirstOrDefault(x => x.Name == "QueryHandler");
 
             var queryHandlerProperties = new StringBuilder();
@@ -127,7 +127,7 @@ namespace {namespaceName}
                 foreach (var parameter in method.Parameters)
                 {
                     var emptyOrComma = SymbolEqualityComparer.Default.Equals(parameter, method.Parameters.Last()) ? "" : ", ";
-                    
+
                     if (parameter.Name.Equals("query", StringComparison.OrdinalIgnoreCase))
                     {
                         queryHandlerParameters.Append(
@@ -155,7 +155,7 @@ namespace {namespaceName}
             }
 
             var addValidation = prop.GetMembers().FirstOrDefault(x => x.Name == "AddValidation");
-                
+
             var queryValidator = new StringBuilder();
 
             if (addValidation is not null)
@@ -190,13 +190,15 @@ private class _QueryHandler : IRequestHandler<Query, {queryTypeArgument}>
             {
                 return "";
             }
-            
+
             var commandHandler = symbol.GetMembers().FirstOrDefault(x => x.Name == "CommandHandler");
 
             var commandHandlerProperties = new StringBuilder();
             var commandHandlerInjectedProperties = new StringBuilder();
             var commandHandlerConstructorParameters = new StringBuilder();
             var commandHandlerParameters = new StringBuilder();
+
+            dynamic commandTypeArgument = null;
 
             if (commandHandler is IMethodSymbol method)
             {
@@ -223,6 +225,11 @@ private class _QueryHandler : IRequestHandler<Query, {queryTypeArgument}>
                         commandHandlerInjectedProperties.AppendLine($"_{parameter.Name} = {parameter.Name};");
                     }
                 }
+
+                if (method.ReturnType is INamedTypeSymbol returnType)
+                {
+                    commandTypeArgument = returnType.TypeArguments.First();
+                }
             }
 
             var addValidation = prop.GetMembers().FirstOrDefault(x => x.Name == "AddValidation");
@@ -236,11 +243,11 @@ private class _QueryHandler : IRequestHandler<Query, {queryTypeArgument}>
             }
 
             return @$"
-public {(command.IsSealed ? "sealed" : "")} partial record Command : IRequest {{ }} 
+public {(command.IsSealed ? "sealed" : "")} partial record Command : IRequest{(commandTypeArgument is null ? "" : $"<{commandTypeArgument}>")} {{ }} 
 
 {commandValidator}
 
-private class _CommandHandler : AsyncRequestHandler<Command>
+private class _CommandHandler : {(commandTypeArgument is null ? "AsyncRequestHandler<Command>" : $"IRequestHandler<Command, {commandTypeArgument}>")}
 {{
     {commandHandlerProperties}
 
@@ -249,7 +256,7 @@ private class _CommandHandler : AsyncRequestHandler<Command>
         {commandHandlerInjectedProperties}
     }}
 
-    protected override async Task Handle(Command request, CancellationToken cancellationToken)
+    {(commandTypeArgument is null ? "protected override async Task" : $"public async Task<{commandTypeArgument}>")} Handle(Command request, CancellationToken cancellationToken)
         => {(commandHandler is null ? "await Task.CompletedTask;" : $"await CommandHandler({commandHandlerParameters});")}
 }} 
 ";
