@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace GenerateMediator
 {
@@ -112,7 +113,7 @@ namespace {namespaceName}
             {
                 return "";
             }
-
+            
             var queryHandler = symbol.GetMembers().FirstOrDefault(x => x.Name == "QueryHandler");
 
             var queryHandlerProperties = new StringBuilder();
@@ -127,7 +128,7 @@ namespace {namespaceName}
                 foreach (var parameter in method.Parameters)
                 {
                     var emptyOrComma = SymbolEqualityComparer.Default.Equals(parameter, method.Parameters.Last()) ? "" : ", ";
-
+                    
                     if (parameter.Name.Equals("query", StringComparison.OrdinalIgnoreCase))
                     {
                         queryHandlerParameters.Append(
@@ -155,7 +156,7 @@ namespace {namespaceName}
             }
 
             var addValidation = prop.GetMembers().FirstOrDefault(x => x.Name == "AddValidation");
-
+                
             var queryValidator = new StringBuilder();
 
             if (addValidation is not null)
@@ -190,7 +191,7 @@ private class _QueryHandler : IRequestHandler<Query, {queryTypeArgument}>
             {
                 return "";
             }
-
+            
             var commandHandler = symbol.GetMembers().FirstOrDefault(x => x.Name == "CommandHandler");
 
             var commandHandlerProperties = new StringBuilder();
@@ -228,7 +229,10 @@ private class _QueryHandler : IRequestHandler<Query, {queryTypeArgument}>
 
                 if (method.ReturnType is INamedTypeSymbol returnType)
                 {
-                    commandTypeArgument = returnType.TypeArguments.First();
+                    if (returnType.TypeParameters.Any())
+                    {
+                        commandTypeArgument = returnType.TypeArguments.First();
+                    }
                 }
             }
 
@@ -242,12 +246,14 @@ private class _QueryHandler : IRequestHandler<Query, {queryTypeArgument}>
                     @$"public class CommandValidator : AbstractValidator<Command> {{ public CommandValidator() {{ Command.AddValidation(this); }} }}");
             }
 
-            return @$"
-public {(command.IsSealed ? "sealed" : "")} partial record Command : IRequest{(commandTypeArgument is null ? "" : $"<{commandTypeArgument}>")} {{ }} 
+            if (commandTypeArgument is null)
+            {
+                return @$"
+public {(command.IsSealed ? "sealed" : "")} partial record Command : IRequest {{ }} 
 
 {commandValidator}
 
-private class _CommandHandler : {(commandTypeArgument is null ? "AsyncRequestHandler<Command>" : $"IRequestHandler<Command, {commandTypeArgument}>")}
+private class _CommandHandler : AsyncRequestHandler<Command>
 {{
     {commandHandlerProperties}
 
@@ -256,10 +262,32 @@ private class _CommandHandler : {(commandTypeArgument is null ? "AsyncRequestHan
         {commandHandlerInjectedProperties}
     }}
 
-    {(commandTypeArgument is null ? "protected override async Task" : $"public async Task<{commandTypeArgument}>")} Handle(Command request, CancellationToken cancellationToken)
+    protected override async Task Handle(Command request, CancellationToken cancellationToken)
         => {(commandHandler is null ? "await Task.CompletedTask;" : $"await CommandHandler({commandHandlerParameters});")}
 }} 
 ";
+            }
+            else
+            {
+                return @$"
+public {(command.IsSealed ? "sealed" : "")} partial record Command : IRequest<{commandTypeArgument}> {{ }} 
+
+{commandValidator}
+
+private class _CommandHandler : IRequestHandler<Command, {commandTypeArgument}>
+{{
+    {commandHandlerProperties}
+
+    public _CommandHandler({commandHandlerConstructorParameters})
+    {{
+        {commandHandlerInjectedProperties}
+    }}
+
+    public async Task<{commandTypeArgument}> Handle(Command request, CancellationToken cancellationToken)
+        => {(commandHandler is null ? "await Task.FromResult(Unit.Value);" : $"await CommandHandler({commandHandlerParameters});")}
+}} 
+";
+            }
         }
     }
 }
