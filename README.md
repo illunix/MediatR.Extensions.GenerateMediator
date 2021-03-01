@@ -1,6 +1,6 @@
 # GenerateMediator
-[![NuGet](https://img.shields.io/nuget/dt/mediatr.svg)](https://www.nuget.org/packages/GenerateMediator) 
-[![NuGet](https://img.shields.io/nuget/vpre/mediatr.svg)](https://www.nuget.org/packages/GenerateMediator)
+[![NuGet](https://img.shields.io/nuget/dt/GenerateMediator.svg)](https://www.nuget.org/packages/GenerateMediator) 
+[![NuGet](https://img.shields.io/nuget/vpre/GenerateMediator.svg)](https://www.nuget.org/packages/GenerateMediator)
 
 Generate command, queries, validators and handlers for MediatR
 
