@@ -13,17 +13,6 @@ namespace GenerateMediator
     [Generator]
     internal class MediatorGenerator : ISourceGenerator
     {
-        private const string attributeText = @"
-using System;
-namespace GenerateMediator
-{
-    [AttributeUsage(AttributeTargets.Class)]
-    public class GenerateMediatorAttribute : Attribute
-    {
-    }
-}
-";
-
         public void Initialize(GeneratorInitializationContext context)
             => context.RegisterForSyntaxNotifications(() => new SyntaxReceiver());
 
@@ -35,22 +24,17 @@ namespace GenerateMediator
                 Debugger.Launch();
             }
 #endif
-            context.AddSource("GenerateMediatorAttribute", SourceText.From(attributeText, Encoding.UTF8));
-
             if (context.SyntaxReceiver is not SyntaxReceiver receiver)
             {
                 return;
             }
 
-            var options = (context.Compilation as CSharpCompilation).SyntaxTrees[0].Options as CSharpParseOptions;
-            var compilation = context.Compilation.AddSyntaxTrees(CSharpSyntaxTree.ParseText(SourceText.From(attributeText, Encoding.UTF8), options));
-
-            var attributeSymbol = compilation.GetTypeByMetadataName("GenerateMediator.GenerateMediatorAttribute");
+            var attributeSymbol = context.Compilation.GetTypeByMetadataName("GenerateMediator.GenerateMediatorAttribute");
             var classSymbols = new List<INamedTypeSymbol>();
 
             foreach (var cls in receiver.CandidateClasses)
             {
-                var model = compilation.GetSemanticModel(cls.SyntaxTree);
+                var model = context.Compilation.GetSemanticModel(cls.SyntaxTree);
 
                 var classSymbol = model.GetDeclaredSymbol(cls);
 
@@ -170,11 +154,11 @@ public {(query.IsSealed ? "sealed" : "")} partial record Query : IRequest<{query
 
 {queryValidator}
 
-private class _QueryHandler : IRequestHandler<Query, {queryTypeArgument}>
+private class QueryHandlerCore : IRequestHandler<Query, {queryTypeArgument}>
 {{
     {queryHandlerProperties}
 
-    public _QueryHandler({queryHandlerConstructorParameters})
+    public QueryHandlerCore({queryHandlerConstructorParameters})
     {{
         {queryHandlerInjectedProperties}
     }}
@@ -253,11 +237,11 @@ public {(command.IsSealed ? "sealed" : "")} partial record Command : IRequest {{
 
 {commandValidator}
 
-private class _CommandHandler : AsyncRequestHandler<Command>
+private class CommandHandlerCore : AsyncRequestHandler<Command>
 {{
     {commandHandlerProperties}
 
-    public _CommandHandler({commandHandlerConstructorParameters})
+    public CommandHandlerCore({commandHandlerConstructorParameters})
     {{
         {commandHandlerInjectedProperties}
     }}
@@ -274,11 +258,11 @@ public {(command.IsSealed ? "sealed" : "")} partial record Command : IRequest<{c
 
 {commandValidator}
 
-private class _CommandHandler : IRequestHandler<Command, {commandTypeArgument}>
+private class CommandHandlerCore : IRequestHandler<Command, {commandTypeArgument}>
 {{
     {commandHandlerProperties}
 
-    public _CommandHandler({commandHandlerConstructorParameters})
+    public CommandHandlerCore({commandHandlerConstructorParameters})
     {{
         {commandHandlerInjectedProperties}
     }}
