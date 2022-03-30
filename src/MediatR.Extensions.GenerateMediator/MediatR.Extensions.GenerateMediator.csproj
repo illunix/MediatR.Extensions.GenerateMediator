@@ -7,7 +7,8 @@
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageLicenseFile>LICENSE</PackageLicenseFile>
 		<RepositoryUrl>https://github.com/illunix/MediatR.Extensions.GenerateMediator</RepositoryUrl>
-		<Version>1.0.1</Version>
+		<Version>1.0.2</Version>
+		<Description>Generate commands, queries and handlers for MediatR</Description>
 	</PropertyGroup>
 
 	<ItemGroup>
