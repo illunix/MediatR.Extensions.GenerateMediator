@@ -1,12 +1,8 @@
 # MediatR.Extensions.GenerateMediator
-[![NuGet](https://img.shields.io/nuget/dt/GenerateMediator.svg)](https://www.nuget.org/packages/GenerateMediator) 
-[![NuGet](https://img.shields.io/nuget/vpre/GenerateMediator.svg)](https://www.nuget.org/packages/GenerateMediator)
+[![NuGet](https://img.shields.io/nuget/dt/MediatR.Extensions.GenerateMediator.svg)](https://www.nuget.org/packages/MediatR.Extensions.GenerateMediator) 
+[![NuGet](https://img.shields.io/nuget/vpre/MediatR.Extensions.GenerateMediator.svg)](https://www.nuget.org/packages/MediatR.Extensions.GenerateMediator)
 
-Generate command, queries, validators and handlers for MediatR
-
-## Prerequisites
-
-Visual Studio version 16.8 and above is required as its first version to support source generators.
+Generate commands, queries and handlers  for MediatR
 
 ## Installation
 
@@ -14,51 +10,47 @@ Visual Studio version 16.8 and above is required as its first version to support
 PM> Install-Package MediatR.Extensions.GenerateMediator
 ```
 
-## Usage
-
+# Usage
+## Command
 ```csharp
 [GenerateMediator]
-public static partial class Get
+public partial class AddEmployee
 {
-    public partial record Query(int Id) 
-    {
-        public static void AddValidation(AbstractValidator<Query> v)
-            => v.RuleFor(x => x.Id).NotEmpty();
-    }
+    public sealed partial record Command;
 
-    public record Model(IList<Model.WeatherForecast> WeatherForecasts)
+    public static async Task Handler(Command command)
     {
-        public record WeatherForecast(DateTime Date, double TemperatureC);
-    }
-
-    public static async Task<Model> QueryHandler(Query query)
-    {
-        var weatherForecasts = new List<Model.WeatherForecast>();
-
-        return await Task.FromResult(new Model(weatherForecasts));
+        // logic
     }
 }
 ```
 
-When compile, following source will be injected.
-
+## Query
 ```csharp
-public static partial class Get 
-{          
-    public partial record Query : IRequest<Model> { } 
-
-    private class QueryValidator : AbstractValidator<Query> 
-    { 
-        public QueryValidator()
-        {
-            Query.AddValidation(this); 
-        }
-    }   
+[GenerateMediator]
+public partial class GetEmployees
+{
+    public sealed partial record Query;
     
-    public class _QueryHandler : IRequestHandler<Query, Model>
+    public sealed record Employee(string FirstName, string LastName);
+
+    public static async Task<IEnumerable<Employee>> Handler()
     {
-        public async Task<Model> Handle(Query request, CancellationToken cancellationToken)  
-            => await QueryHandler(request);
+        // logic
     }
-} 
+}
+```
+
+## Request Validator
+If you want add validation to your request first thing you need to do is install fluent validation package
+```
+PM> Install-Package FluentValidation.AspNetCore
+```
+To use valdation on your request just use ```AddValidation``` method in your request, it should look something like this
+```csharp
+public sealed partial record Query(string Id)
+{
+    public static void AddValidation(AbstractValidator<Query> v)
+        => v.RuleFor(x => x.Id).NotEmpty();
+}
 ```
