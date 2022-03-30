@@ -14,11 +14,7 @@ namespace MediatR.Extensions.GenerateMediator;
 public class MediatorGenerator : ISourceGenerator
 {
     public void Initialize(GeneratorInitializationContext context)
-    {
-        Debugger.Launch();
-
-        context.RegisterForSyntaxNotifications(() => new SyntaxReceiver());
-    }
+        => context.RegisterForSyntaxNotifications(() => new SyntaxReceiver());
 
     public void Execute(GeneratorExecutionContext context)
     {
