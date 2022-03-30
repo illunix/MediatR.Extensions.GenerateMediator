@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace MediatR.Extensions.GenerateMediator;
@@ -54,7 +55,11 @@ public class MediatorGenerator : ISourceGenerator
 
         var handlerMethod = clazz.GetMembers()
             .FirstOrDefault(q => q.Name == "Handler") as IMethodSymbol;
-        var handlerMethodReturnType = (INamedTypeSymbol)handlerMethod.ReturnType;
+
+        if (handlerMethod?.ReturnType is not INamedTypeSymbol handlerMethodReturnType)
+        {
+            return string.Empty;
+        }
         var handlerMethodParams = handlerMethod.Parameters
             .ToDictionary(q => q.Type, q => q.Name);
         var handlerMethodParamsWithoutRequest = handlerMethodParams.Where(q => q.Key.Name != "Command" && q.Key.Name != "Query").ToList();
@@ -92,12 +97,15 @@ public class MediatorGenerator : ISourceGenerator
 
         var requestInterface = type is not null ? $"IRequest<{handlerMethodReturnType.TypeArguments.FirstOrDefault()}>" : "IRequest";
 
-        var requestMethod = clazz.GetMembers()
-            .FirstOrDefault(q => q.Name == "Command" || q.Name == "Query") as INamedTypeSymbol;
+        if (clazz.GetMembers()
+                .FirstOrDefault(q => q.Name == "Command" || q.Name == "Query") is not INamedTypeSymbol requestMethod)
+        {
+            return string.Empty;
+        }
 
         var requestMethodName = clazz.GetMembers().Any(q => q.Name == "Command") ? "Command" : "Query";
 
-        requestBuilder.AppendLine($"public partial record {requestMethodName} : {requestInterface} {{ }}");
+        requestBuilder.Append($"public partial record {requestMethodName} : {requestInterface} {{ }}");
         #endregion
 
         #region RequestValidator
@@ -108,7 +116,7 @@ public class MediatorGenerator : ISourceGenerator
         {
             var className = $"{requestMethodName}Validator";
 
-            requestValidatorBuilder.AppendLine($"public class {className} : AbstractValidator<{requestMethodName}> {{ public {className}() {{ {requestMethodName}.AddValidation(this); }} }}");
+            requestValidatorBuilder.Append($"public class {className} : AbstractValidator<{requestMethodName}> {{ public {className}() {{ {requestMethodName}.AddValidation(this); }} }}");
         }
         #endregion
 
@@ -118,38 +126,42 @@ public class MediatorGenerator : ISourceGenerator
         var constructorParams = string.Join(", ", handlerMethodParamsWithoutRequest.Select(q => $"{q.Key} {q.Value}"));
         var injected = string.Join("\n", handlerMethodParamsWithoutRequest.Select(q => $"_{q.Value} = {q.Value};"));
 
-        constructorBuilder.AppendLine($@"
-public {requestMethodName}HandlerCore({constructorParams})
-{{
-    {injected}
-}}
-");
+        var useConstructor = handlerMethodParamsWithoutRequest.Any();
+        if (useConstructor)
+        {
+            constructorBuilder.AppendLine(
+                $@"public {requestMethodName}HandlerCore({constructorParams})
+                {{
+                    {injected}
+                }}"
+            ); 
+        }
         #endregion
 
         #region Handle
         var handleBuilder = new StringBuilder();
 
-        handleBuilder.AppendLine(@$"
-public async Task<{(type is null ? "Unit": type)}> Handle({requestMethodName} request, CancellationToken cancellationToken) 
-{{
-    {(type is null ? "return Unit.Value;" : 
-        $"return await Handler({string.Join(", ", handlerMethodParams.Values.Select(q => q == "request" || q == "command" || q == "query" ? "request" : $"_{q}"))});")}
-}}
-");
-        #endregion
+        var handlerParams =  string.Join(", ", handlerMethodParams.Values.Select(q => q == "request" || q == "command" || q == "query" ? "request" : $"_{q}"));
 
-        return @$"
-namespace {namespaceName}
+        handleBuilder.Append(
+            @$"public async Task<{type ?? "Unit"}> Handle({requestMethodName} request, CancellationToken cancellationToken) 
+            {{
+                {(type is null ? $"await Handler({handlerParams});\n\n\t\t\t\treturn Unit.Value;" :
+                    $"return await Handler({handlerParams});")}
+            }}"
+        );
+        #endregion
+        
+        return 
+@$"namespace {namespaceName}
 {{
     public partial class {clazz.Name} 
     {{
         {requestBuilder}
         {requestValidatorBuilder}
-        
         private class {requestMethodName}HandlerCore : IRequestHandler<{clazz.Name}.{requestMethodName}{(type is null ? "" : $", {type}")}>
         {{
-            {propertiesBuilder}
-            {constructorBuilder}
+            {propertiesBuilder}{constructorBuilder}
             {handleBuilder}
         }}
     }}
