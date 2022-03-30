@@ -1,4 +1,4 @@
-# GenerateMediator
+# MediatR.Extensions.GenerateMediator
 [![NuGet](https://img.shields.io/nuget/dt/GenerateMediator.svg)](https://www.nuget.org/packages/GenerateMediator) 
 [![NuGet](https://img.shields.io/nuget/vpre/GenerateMediator.svg)](https://www.nuget.org/packages/GenerateMediator)
 
@@ -11,7 +11,7 @@ Visual Studio version 16.8 and above is required as its first version to support
 ## Installation
 
 ```
-PM> Install-Package GenerateMediator
+PM> Install-Package MediatR.Extensions.GenerateMediator
 ```
 
 ## Usage

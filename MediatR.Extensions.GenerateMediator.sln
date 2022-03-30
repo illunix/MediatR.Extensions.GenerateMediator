@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.1.32319.34
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MediatR.Extensions.GenerateMediator", "src\MediatR.Extensions.GenerateMediator\MediatR.Extensions.GenerateMediator.csproj", "{6CB0BB3A-47E9-4846-AE5D-31F1566711C8}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MediatR.Extensions.GenerateMediator.Example", "src\MediatR.Extensions.GenerateMediator.Example\MediatR.Extensions.GenerateMediator.Example.csproj", "{B428FA16-A9BC-4B5A-B4E3-AF5316FD5665}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6CB0BB3A-47E9-4846-AE5D-31F1566711C8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6CB0BB3A-47E9-4846-AE5D-31F1566711C8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6CB0BB3A-47E9-4846-AE5D-31F1566711C8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6CB0BB3A-47E9-4846-AE5D-31F1566711C8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B428FA16-A9BC-4B5A-B4E3-AF5316FD5665}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B428FA16-A9BC-4B5A-B4E3-AF5316FD5665}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B428FA16-A9BC-4B5A-B4E3-AF5316FD5665}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B428FA16-A9BC-4B5A-B4E3-AF5316FD5665}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E9D3C988-86F1-4BA4-978E-666634542F1A}
+	EndGlobalSection
+EndGlobal
