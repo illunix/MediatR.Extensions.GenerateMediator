@@ -1,4 +1,6 @@
-﻿namespace MediatR.Extensions.GenerateMediator.Example;
+﻿using FluentValidation;
+
+namespace MediatR.Extensions.GenerateMediator.Example;
 
 [GenerateMediator]
 public partial class GetWeatherForecast

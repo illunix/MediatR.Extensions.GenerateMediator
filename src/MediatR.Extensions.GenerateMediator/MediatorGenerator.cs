@@ -92,9 +92,24 @@ public class MediatorGenerator : ISourceGenerator
 
         var requestInterface = type is not null ? $"IRequest<{handlerMethodReturnType.TypeArguments.FirstOrDefault()}>" : "IRequest";
 
+        var requestMethod = clazz.GetMembers()
+            .FirstOrDefault(q => q.Name == "Command" || q.Name == "Query") as INamedTypeSymbol;
+
         var requestMethodName = clazz.GetMembers().Any(q => q.Name == "Command") ? "Command" : "Query";
 
         requestBuilder.AppendLine($"public partial record {requestMethodName} : {requestInterface} {{ }}");
+        #endregion
+
+        #region RequestValidator
+        var requestValidatorBuilder = new StringBuilder();
+
+        var addValidationMethod = requestMethod.GetMembers().FirstOrDefault(x => x.Name == "AddValidation");
+        if (addValidationMethod is not null)
+        {
+            var className = $"{requestMethodName}Validator";
+
+            requestValidatorBuilder.AppendLine($"public class {className} : AbstractValidator<{requestMethodName}> {{ public {className}() {{ {requestMethodName}.AddValidation(this); }} }}");
+        }
         #endregion
 
         #region Constructor
@@ -103,8 +118,8 @@ public class MediatorGenerator : ISourceGenerator
         var constructorParams = string.Join(", ", handlerMethodParamsWithoutRequest.Select(q => $"{q.Key} {q.Value}"));
         var injected = string.Join("\n", handlerMethodParamsWithoutRequest.Select(q => $"_{q.Value} = {q.Value};"));
 
-        constructorBuilder.Append($@"
-public {clazz.Name}({constructorParams})
+        constructorBuilder.AppendLine($@"
+public {requestMethodName}HandlerCore({constructorParams})
 {{
     {injected}
 }}
@@ -126,15 +141,17 @@ public async Task<{(type is null ? "Unit": type)}> Handle({requestMethodName} re
         return @$"
 namespace {namespaceName}
 {{
-    public partial class {clazz.Name} : IRequestHandler<{clazz.Name}.{requestMethodName}{(type is null ? "" : $", {type}")}>
+    public partial class {clazz.Name} 
     {{
-        {propertiesBuilder.ToString()}
-
-        {requestBuilder.ToString()}
-
-        {constructorBuilder.ToString()}
-
-        {handleBuilder.ToString()}
+        {requestBuilder}
+        {requestValidatorBuilder}
+        
+        private class {requestMethodName}HandlerCore : IRequestHandler<{clazz.Name}.{requestMethodName}{(type is null ? "" : $", {type}")}>
+        {{
+            {propertiesBuilder}
+            {constructorBuilder}
+            {handleBuilder}
+        }}
     }}
 }}
 ";
