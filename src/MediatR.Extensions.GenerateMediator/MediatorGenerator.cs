@@ -30,6 +30,8 @@ public class MediatorGenerator : ISourceGenerator
 
         var sb = new StringBuilder();
 
+        sb.AppendLine("using MediatR;");
+
         foreach (var clazz in classes)
         {
             sb.AppendLine(GetSource(clazz));
