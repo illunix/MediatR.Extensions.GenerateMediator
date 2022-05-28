@@ -139,7 +139,7 @@ public class MediatorGenerator : ISourceGenerator
         #region Handle
         var handleBuilder = new StringBuilder();
 
-        var handlerParams =  string.Join(", ", handlerMethodParams.Values.Select(q => q == "request" || q == "command" || q == "query" ? "request" : $"_{q}"));
+        var handlerParams =  string.Join(", ", handlerMethodParams.Values.Select(q => q == "request" || q == "req" || q == "command" || q == "query" ? "request" : $"_{q}"));
 
         handleBuilder.Append(
             @$"public async Task<{type ?? "Unit"}> Handle({requestMethodName} request, CancellationToken cancellationToken) 
